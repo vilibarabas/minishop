@@ -1,0 +1,54 @@
+<?php
+
+function product_manager_menu() {
+  $menu = [];
+  $menu['products/add'] = [
+    'title' => 'Add new product',
+    'access callback' => TRUE,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['product_manager_add_product_form'],
+    'access arguments' => ['minishop add product'],
+  ];
+  
+  return $menu;
+}
+
+function product_manager_add_product_form($form, &$form_state) {
+ 
+  $form['product_name'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Name'), 
+    '#size' => 60, 
+    '#required' => TRUE,                      
+  );
+  
+  $form['product_description'] = array(
+    '#title' => t('Description'),
+    '#type' => 'textarea',
+    '#default_value' => isset(  $context['product_description']) ? drupal_implode_tags($context['product_description']) : '',
+  );
+  
+  $form['product_price'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Price'), 
+    '#size' => 60, 
+    '#maxlength' => 128, 
+    '#required' => TRUE,                      
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit', 
+    '#value' => t('Submit'),                      
+  );
+  
+  return $form;
+}
+
+function product_manager_permission() {
+  return array(
+    'minishop add product' => array(
+      'title' => t('Add product'),
+      'description' => t('Add product to minishop'),
+    ),
+  );
+}

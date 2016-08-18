@@ -1,0 +1,4 @@
+name = Product Manager
+description = Product Manager.
+package = Minishop
+core = 7.x
