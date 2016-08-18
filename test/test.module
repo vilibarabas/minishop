@@ -1,0 +1,207 @@
+<?php
+
+module_load_include('inc', 'test', 'includes/teams');
+
+function test_menu() {
+  $items = [];
+  
+  $items['test/my_page/%'] = array(
+    'title' => 'Test Page',
+    'access callback' => TRUE,
+    'page callback' => 'test_page',
+    'page arguments' => array(2),
+    'menu name' => 'navigation',
+    'type' => MENU_NORMAL_ITEM
+  );
+  
+   $items['football/members/%'] = array(
+    'title callback' => 'test_football_title_callback',
+    'title arguments' => array(2),
+    'access callback' => TRUE,
+    'page callback' => 'test_football_page',
+    'page arguments' => array(2),
+    'menu name' => 'navigation',
+    'type' => MENU_NORMAL_ITEM
+  );
+   
+   $items['myform'] = array(
+      'title' => 'My form',
+      'access callback' => TRUE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('test_myform_form'), 
+    );
+  
+  return $items;
+}
+
+function test_myform_form($form, $form_state) {
+  $form['name'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Name'), 
+    '#size' => 60, 
+    '#maxlength' => 128, 
+    '#required' => TRUE,                      
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit', 
+    '#value' => t('Submit'),                      
+  );
+
+  
+  return $form;
+}
+
+function test_myform_form_submit($form, &$form_state) {
+  $values = &$form_state['values'];
+  
+  $result = module_invoke_all('myhook');
+  
+  dpm($result);
+}
+
+function test_myhook() {
+  return 'a intrat';
+}
+
+function test_myform_form_validate($form, &$form_state) {
+  $values = &$form_state['values'];
+  if($values['name'] === 'norbi')
+    form_set_error('name', t('Norbi nu este ok!!'));
+}
+
+function test_football_title_callback($team) {
+  $teams = _get_teams();
+ 
+  if(!isset($teams[$team])) {
+    return '';
+  }
+  
+  $title = "Members of ". $teams[$team]['name'];
+  return $title;
+}
+
+function test_football_page($team) {
+  global $base_url;
+  $teams = _get_teams();
+  $page = [];
+  
+  $path = drupal_get_path('module', 'test');
+  
+  if(!isset($teams[$team])) {
+     drupal_not_found();
+  }
+  $header = theme_render_template($path. '/templates/team.tpl.php', array(
+                                                                          'logo' => $base_url.'/'. $path. '/images/'. $teams[$team]['logo'],
+                                                                          'name' => $teams[$team]['name'],
+                                                                          ));
+  $items = [];
+  
+  foreach($teams[$team]['members'] as $player) {
+    $player['picture'] = $base_url.'/'. $path. '/images/'. $player['picture'];
+    $items[] = theme_render_template($path. '/templates/player.tpl.php', $player);
+  }
+  
+  $players = theme_item_list([
+                                'items' => $items,
+                                'title' => null,
+                                'type' => 'ul',
+                                'attributes' => []
+                                ]);
+  $head = [
+           t('Team overwiev'), 
+           ];
+  $rows = [
+           [$header],
+           [$players],
+          ];
+  
+  $page['team'] = [
+                   '#markup' => theme_table([
+                                             'header' => $head,
+                                             'rows' => $rows,
+                                             'attributes' => [],
+                                             'caption' => null,
+                                             'colgroups' => null,
+                                             'sticky' => null,
+                                             'empty' => '',
+                                             ]),
+                   
+                   ];
+   
+  return $page;
+}
+
+function test_page($param) {
+  $page = array();
+  
+  $text = t('Hello @param', array('@param' => $param));
+
+  $page['hello'] = array(
+                         '#markup' => '<strong>' . $text. '</strong>'
+                         );
+  
+  $page['form'] = drupal_get_form('test_myform_form');
+  return $page;
+}
+
+function test_page_alter(&$page) {
+    $rules = array('test/my_page/*', 'ssassaa');
+  $rules = implode("\n", $rules);
+  
+  if(drupal_match_path(current_path(), $rules)) {
+    //dpm($page);
+  }
+}
+
+
+
+function test_block_info() {
+  $blocks = [];
+  
+  $blocks['current_date'] = array(
+    'info' => t('Current Date'),
+  
+  );
+  $blocks['current_time'] = array(
+    'info' => t('Current Time'),
+  
+  );
+  
+  return $blocks;
+}
+
+
+function test_block_view($delta) {
+  
+  
+  $block = array();
+
+  switch ($delta) {
+    case 'current_date':
+      $block['subject'] = t('Current Date');
+      $block['content'] = test_current_date_block_content();
+      break;
+
+    case 'current_time':
+      $block['subject'] = t('Current Time');
+      $block['content'] = test_current_time_block_content();
+      break;
+  }
+  return $block;
+}
+
+function test_current_date_block_content() {
+  
+ $page['form'] = drupal_get_form('test_myform_form');
+  return $page;
+}
+
+function test_current_time_block_content() {
+  $t = time();
+  return date('H/i/s', $t);
+}
+
+function test_block_config() {
+  
+}

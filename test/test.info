@@ -1,0 +1,5 @@
+name = Test Module
+description = First test drupal
+package = Other
+core = 7.x
+configure = admin/config/development/devel
