@@ -2,12 +2,34 @@
 
 function product_manager_menu() {
   $menu = [];
-  $menu['products/add'] = [
+  
+ 
+  $menu['admin/config/products_manager'] = array(
+    'title' => 'Product Manager',
+    'description' => 'Product Manager config.',
+    'position' => 'right',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+    );
+  $menu['admin/config/products_manager/settings'] = array(
+    'title' => 'Config',
+    'description' => 'Change language settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('product_manager_admin_settings_submit'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'product_manager.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+    );
+  $menu['admin/config/products_manager/add'] = [
     'title' => 'Add new product',
     'access callback' => TRUE,
     'page callback' => 'drupal_get_form',
     'page arguments' => ['product_manager_add_product_form'],
     'access arguments' => ['minishop add product'],
+   
   ];
   
   return $menu;

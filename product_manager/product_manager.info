@@ -2,3 +2,6 @@ name = Product Manager
 description = Product Manager.
 package = Minishop
 core = 7.x
+files[] = products_manager.module
+
+files[] = products_manager.admin.inc
