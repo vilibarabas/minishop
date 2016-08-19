@@ -1,0 +1,4 @@
+name = Wishlist
+description = Wishlist for products.
+package = MiniShop
+core = 7.x

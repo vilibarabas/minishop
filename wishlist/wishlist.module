@@ -1,0 +1,50 @@
+<?php
+
+
+function wishlist_menu() {
+  $menu = array();
+  
+  $menu['dt_test'] = array(
+    'title' => 'DB test',
+    'page callback' => 'test_page',
+    'page arguments' => array('test_page'),
+    'access callback' => TRUE,
+  );
+  
+  return $menu;
+}
+
+function test_page() {
+  
+  $page = array();
+  //$nid = db_insert('wishlist') // Table name no longer needs {}
+  //  ->fields(array(
+  //    'pid' => 1,
+  //    'uid' => 1,
+  //    'created' => REQUEST_TIME,
+  //    'weight' => -10
+  //  ))
+  //  ->execute();
+
+  //$result = db_select('wishlist', 'w')
+  //          ->fields('w')
+  //          ->condition('id', 2)
+  //          ->range(0, 10)
+  //          ->execute();
+  //
+  //
+ 
+  //db_update('wishlist')
+  //  ->fields(array(
+  //      'uid' => 11
+  //    ))
+  //  ->condition('id', 2)
+  //  ->execute();
+  
+  db_delete('wishlist')
+      ->condition('id', 2)
+      ->execute();
+  return $page;
+}
+
+

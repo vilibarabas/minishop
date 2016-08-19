@@ -1,76 +1,148 @@
 <?php
 
+function product_manager_permission() {
+  return array(
+    'minishop add product' => array(
+      'title' => t('Add product'),
+      'description' => t('Add product to minishop.'),
+    ),
+  );
+}
+
 function product_manager_menu() {
-  $menu = [];
+  $menu = array();
   
- 
-  $menu['admin/config/products_manager'] = array(
-    'title' => 'Product Manager',
-    'description' => 'Product Manager config.',
-    'position' => 'right',
-    'weight' => -5,
-    'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => array('administer site configuration'),
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
-    );
-  $menu['admin/config/products_manager/settings'] = array(
-    'title' => 'Config',
-    'description' => 'Change language settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('product_manager_admin_settings_submit'),
-    'access arguments' => array('administer site configuration'),
-    'file' => 'product_manager.admin.inc',
-    'type' => MENU_NORMAL_ITEM,
-    );
-  $menu['admin/config/products_manager/add'] = [
+  $menu['products/add'] = array(
     'title' => 'Add new product',
-    'access callback' => TRUE,
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['product_manager_add_product_form'],
-    'access arguments' => ['minishop add product'],
-   
-  ];
+    'page arguments' => array('product_manager_add_product_form'),
+    'access arguments' => array('minishop add product'),
+  );
   
   return $menu;
 }
 
 function product_manager_add_product_form($form, &$form_state) {
- 
+  
+  
+  
+  $form_state['storage']['product_images'] =
+    isset($form_state['storage']['product_images'])
+    ? $form_state['storage']['product_images'] : 1;
+  
+  if (isset($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'add_product_image_button') {
+    $form_state['storage']['product_images']++;
+  }
+  
+  // Name
   $form['product_name'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Name'), 
-    '#size' => 60, 
-    '#required' => TRUE,                      
+    '#type' => 'textfield',
+    '#title' => t('Product name'),
+    '#size' => 60,
+    '#required' => TRUE,
   );
   
+  // Description
   $form['product_description'] = array(
-    '#title' => t('Description'),
     '#type' => 'textarea',
-    '#default_value' => isset(  $context['product_description']) ? drupal_implode_tags($context['product_description']) : '',
+    '#title' => t('Product description'),
   );
   
+  // Price
   $form['product_price'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Price'), 
-    '#size' => 60, 
-    '#maxlength' => 128, 
-    '#required' => TRUE,                      
+    '#type' => 'textfield',
+    '#title' => t('Product price'),
+    '#size' => 6,
+    '#required' => TRUE,
   );
-
+  
+  // Images
+  $form['product_images'] = array(
+    '#type' => 'container',
+    '#tree' => TRUE,
+    '#prefix' => '<div id="product_images">',
+    '#suffix' => '</div>',
+  );
+  
+  for ($i = 1; $i <= $form_state['storage']['product_images']; $i++) {
+    $form['product_images'][$i] = array(
+      '#type' => 'fieldset',
+	    '#tree' => TRUE,
+    );
+    
+    $form['product_images'][$i]['image'] = array(
+      '#type' => 'managed_file',
+      '#name' => 'product_image_' . $i,
+      '#title' => t('Product image'),
+      '#size' => 40,
+      '#description' => t("Prostii de ale noastre."),
+      '#upload_location' => 'public://product_images',
+    );
+  }
+  
+  $form['add_product_image'] = array(
+    '#type' => 'button',
+    '#value' => t('Add product image'),
+    '#name' => 'add_product_image_button',
+    '#href' => '',
+    '#ajax' => array(
+      'callback' => 'add_product_form_ajax_add_product_image',
+      'wrapper' => 'product_images',
+    ),
+  );
+  
   $form['submit'] = array(
-    '#type' => 'submit', 
-    '#value' => t('Submit'),                      
+    '#type' => 'submit',
+    '#value' => t('Save'),
   );
+  
+  
   
   return $form;
 }
 
-function product_manager_permission() {
-  return array(
-    'minishop add product' => array(
-      'title' => t('Add product'),
-      'description' => t('Add product to minishop'),
-    ),
-  );
+function add_product_form_ajax_add_product_image($form, &$form_state) {
+  return $form['product_images'];
+}
+
+function product_manager_add_product_form_submit($form, &$form_state) {
+  global $user;
+  
+  $values = &$form_state['values'];
+  
+  $node = new stdClass();
+  $node->title = $values['product_name'];
+  $node->type = "product";
+  node_object_prepare($node); // Sets some defaults. Invokes hook_prepare() and hook_node_prepare().
+  $node->language = LANGUAGE_NONE; // Or e.g. 'en' if locale is enabled
+  $node->uid = $user->uid; 
+  $node->status = 1; //(1 or 0): published or not
+  $node->promote = 0; //(1 or 0): promoted to front page
+  $node->comment = 0; // 0 = comments disabled, 1 = read only, 2 = read/write
+
+  $node->field_description[$node->language][]['value'] = $values['product_description'];
+  $node->field_price[$node->language][]['value'] = $values['product_price'];
+  
+  if (isset($values['product_images'])) {
+    foreach($values['product_images'] as $image) {
+      if (!$image['image'])
+        continue;
+      
+      $file = file_load($image['image']);
+      $file->status = FILE_STATUS_PERMANENT;
+      $file = file_save($file);
+      
+      $node->field_images[LANGUAGE_NONE][] = array(
+        'fid' => $file->fid,
+        'filename' => $file->filename,
+        'filemime' => $file->filemime,
+        'uid' => $user->uid,
+        'uri' => $file->uri,
+        'status' => 1
+      );
+    }
+  }
+  
+  $node = node_submit($node); // Prepare node for saving
+  node_save($node);
 }
