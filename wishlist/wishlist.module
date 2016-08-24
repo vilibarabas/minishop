@@ -10,6 +10,32 @@ function wishlist_init() {
 function wishlist_menu() {
   $menu = array();
   
+  $menu['admin/config/wishlist'] = array(
+    'title' => 'Wishlist',
+    'description' => 'A Wishlist.',
+    'position' => 'left',
+    'weight' => -15,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  
+  $menu['admin/config/wishlist/settings'] = array(
+    'title' => 'Wishlist settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wishlist_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  $menu['wishlist/add/%'] = array(
+    'title' => 'Add to wishlist',
+    'page callback' => 'whislist_add_item',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  
   $menu['wishlist'] = array(
     'title' => 'Wishlist',
     'page callback' => 'wishlist_list',
@@ -27,29 +53,68 @@ function wishlist_menu() {
     
   );
   
-  $menu['wishlist/add/%'] = array(
-    'title' => 'Add to wishlist',
-    'page callback' => 'whislist_add_item',
-    'page arguments' => array(2),
-    'access callback' => TRUE,
-    
-    
-  );
-
+  
   return $menu;
 }
 
-function wishlist_delete_item($item_id) {
-  $page = [];
+function wishlist_settings_form($form, &$form_state) {
+  $entity_info = entity_get_info('node');
   
-   db_delete('wishlist')
-      ->condition('id', $item_id)
-      ->execute();
+  $bundles = [];
+    foreach ($entity_info['bundles'] as $key => $value) {
+    $bundles[$key] = $value['label'];
+  }
   
-  drupal_goto('wishlist');
+  $first_bundle = array_keys($bundles);
+  $first_bundle = reset($first_bundle);
   
-  return $page;
+  $form_state['storage']['bundle'] =
+    isset($form_state['storage']['bundle'])
+    ? $form_state['storage']['bundle'] : $first_bundle;
+
+  if(isset($form_state['triggering_element']['#name']) && $form_state['triggering_element']['#name'] == 'bundle_select') {
+    $form_state['storage']['bundle'] = $form_state['input']['bundle_select'];
+  }
+    
+  $form['bundle'] = array(
+    '#type' => 'select',
+    '#title' => t('Bundle'),
+    '#options' => $bundles,
+    '#name' => 'bundle_select',
+    '#ajax' => [
+      'callback' => 'wishlist_ajax_bundle_select_callback',
+      'wrapper' => 'image_field',
+    ],
+  );
+  
+  $field_info = field_info_instances('node', $form_state['storage']['bundle']);
+  
+  $fields = [];
+  
+  foreach($field_info as $key => $val) {
+    $fields[$key] = $val['label'];
+  }
+  
+  $form['image_field'] = array(
+    '#type' => 'select',
+    '#title' => t('Image Field'),
+    '#options' => $fields,
+    '#prefix' => '<div id="image_field">',
+    '#suffix' => '</div>',
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+  
+  return $form;
 }
+
+function wishlist_ajax_bundle_select_callback($form, &$form_state) {
+  return $form['image_field'];
+}
+
 
 function wishlist_block_info() {
   $blocks['wishlist'] = array(
@@ -195,39 +260,3 @@ function prepar_rows_top($items) {
   
   return $rows;
 }
-
-
-function test_page() {
-  
-  $page = array();
-  //$nid = db_insert('wishlist') // Table name no longer needs {}
-  //  ->fields(array(
-  //    'pid' => 1,
-  //    'uid' => 1,
-  //    'created' => REQUEST_TIME,
-  //    'weight' => -10
-  //  ))
-  //  ->execute();
-
-  //$result = db_select('wishlist', 'w')
-  //          ->fields('w')
-  //          ->condition('id', 2)
-  //          ->range(0, 10)
-  //          ->execute();
-  //
-  //
- 
-  //db_update('wishlist')
-  //  ->fields(array(
-  //      'uid' => 11
-  //    ))
-  //  ->condition('id', 2)
-  //  ->execute();
-  
-  db_delete('wishlist')
-      ->condition('id', 2)
-      ->execute();
-  return $page;
-}
-
-
