@@ -1,18 +1,201 @@
 <?php
 
+function wishlist_init() {
+  $path = drupal_get_path('module', 'wishlist');
+
+  drupal_add_css($path . '/css/top_wishlist.css');
+}
+
 
 function wishlist_menu() {
   $menu = array();
   
-  $menu['dt_test'] = array(
-    'title' => 'DB test',
-    'page callback' => 'test_page',
-    'page arguments' => array('test_page'),
+  $menu['wishlist'] = array(
+    'title' => 'Wishlist',
+    'page callback' => 'wishlist_list',
+    'page arguments' => array('wishlist_list'),
     'access callback' => TRUE,
+
   );
   
+  $menu['delete/%'] = array(
+    'title' => 'Delete',
+    'page callback' => 'wishlist_delete_item',
+    'page arguments' => array(1),
+    'access callback' => TRUE,
+    
+    
+  );
+  
+  $menu['wishlist/add/%'] = array(
+    'title' => 'Add to wishlist',
+    'page callback' => 'whislist_add_item',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    
+    
+  );
+
   return $menu;
 }
+
+function wishlist_delete_item($item_id) {
+  $page = [];
+  
+   db_delete('wishlist')
+      ->condition('id', $item_id)
+      ->execute();
+  
+  drupal_goto('wishlist');
+  
+  return $page;
+}
+
+function wishlist_block_info() {
+  $blocks['wishlist'] = array(
+    'info' => t('Wishlit'), 
+  );
+
+  return $blocks;
+}
+
+
+function wishlist_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'wishlist':
+      $block['subject'] = '';
+      $block['content'] = get_top();
+      break;
+  }
+  return $block;
+}
+
+function get_top() {
+  global $user;
+  $wishlist = db_select('wishlist', 'w')
+            ->fields('w')
+            ->condition('uid', $user->uid)
+            ->execute()
+            ->fetchAll();
+  
+  $top_rows = prepar_rows_top($wishlist);
+  
+  $top = list_top($top_rows);
+
+  return '<div class="dropdown2">
+            <button class="dropbtn2">Wishlist</button>
+            <div class="dropdown-content2">'. $top.'</div>
+          </div>';
+}
+
+
+function list_top($rows){
+  $html = '';
+  foreach($rows as $row) {
+    $html .= "<a>". $row. "</a>";
+  }
+  $html .= l('List all whislist', 'wishlist');
+  return $html;
+}
+
+function wishlist_list() {
+  global $user;
+  $path = drupal_get_path('module', 'wishlist');
+  
+  drupal_add_js(array('wishlist' => array('path' => $path, 'uid' => $user->uid)), array('type' => 'setting'));
+  drupal_add_js($path . '/js/top_wishlist.js');
+  
+  drupal_add_css($path . '/css/top_wishlist.css');
+  
+  global $user;
+  
+  $wishlist = db_select('wishlist', 'w')
+            ->fields('w')
+            ->condition('uid', $user->uid)
+            ->execute()
+            ->fetchAll();
+  
+  $rows = prepar_rows($wishlist);
+  
+  $header = array('Product name', 'Created', 'Price', 'Image', 'Description', '');
+  
+  $per_page = 5;
+  $current_page = pager_default_initialize(count($rows), $per_page);
+  if(!empty($rows)){
+    $chunks = array_chunk($rows, $per_page, TRUE);
+  
+    $output = theme('table', array('header' => $header, 'rows' => $chunks[$current_page]));
+  
+    $output .= theme('pager', array('quantity',count($rows)));
+  }
+  else {
+    $output = "<h2>No Item in wishlist!!!</h2>";
+  }
+  return $output; 
+}
+
+
+
+function whislist_add_item($pid) {
+  $page = array();
+  
+  global $user;
+  
+  $nid = db_insert('wishlist') // Table name no longer needs {}
+    ->fields(array(
+      'pid' => $pid,
+      'uid' => $user->uid,
+      'created' => REQUEST_TIME,
+      'weight' => -10
+    ))
+    ->execute();
+      return $page;
+}
+
+function prepar_rows($items) {
+  $rows = [];
+
+  $key = 0;
+  foreach($items as $item) {
+    
+    $product = node_load($item->pid);
+    //dpm($product->field_images['und'][0]['uri']);
+    $rows[$key]['name'] = $product->title;
+    $time = new DateTime();
+    $time->setTimestamp($product->created);
+    $rows[$key]['created'] = $time->format('d-m-Y');
+    $rows[$key]['price'] = '$ '. $product->field_price['und'][0]['value'];
+    $rows[$key]['images'] = theme('image_style',array('style_name' => 'thumbnail', 'path' => $product->field_images['und'][0]['uri']));
+    $rows[$key]['description'] = $product->field_description['und'][0]['value'];
+    $rows[$key]['delete'] = l('Delete', 'delete/'. $item->id, array('attributes' => array('class' => array('btn btn-danger'))));
+    $key++;
+  }
+  
+  return $rows;
+}
+
+function prepar_rows_top($items) {
+  $rows = [];
+
+  $path = drupal_get_path('module', 'wishlist');
+  
+  $start = ((count($items)-3) > 0) ?  count($items)-3: 0;
+  
+  for($i = $start; $i < count($items); $i++) {
+    $product = node_load($items[$i]->pid);
+    $rows[] = theme_render_template($path. '/templates/top_wishlist_item.tpl.php', array(
+                                                                          'name' => $product->title,
+                                                                          'price' => $product->field_price['und'][0]['value'],
+                                                                          'image' => theme('image_style',array('style_name' => 'thumbnail', 'path' => $product->field_images['und'][0]['uri']))
+                                                                          ));
+    
+  }
+  
+  return $rows;
+}
+
 
 function test_page() {
   

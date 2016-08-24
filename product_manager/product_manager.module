@@ -11,15 +11,65 @@ function product_manager_permission() {
 
 function product_manager_menu() {
   $menu = array();
-  
-  $menu['products/add'] = array(
+  $menu['admin/config/products'] = array(
+    'title' => 'Product Manager',
+    'description' => 'Adjust node annotation options.',
+    'position' => 'right',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+    );
+  $menu['admin/config/products/settings'] = array(
+    'title' => 'Config',
+    'description' => 'Change how annotations behave.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('product_manager_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'product_manager.admin.inc',
+    );
+  $menu['admin/config/products/add'] = array(
     'title' => 'Add new product',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('product_manager_add_product_form'),
     'access arguments' => array('minishop add product'),
   );
   
+  $items['admin/config/annotate'] = array(
+    'title' => 'Node annotation',
+    'description' => 'Adjust node annotation options.',
+    'position' => 'right',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+    );
+    $items['admin/config/annotate/settings'] = array(
+    'title' => 'Annotation settings',
+    'description' => 'Change how annotations behave.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('annotate_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'annotate.admin.inc',
+    );
+
   return $menu;
+}
+
+function product_manager_node_load($nodes, $types) {
+  global $user;
+
+  // Check to see if the person viewing the node is the author. If not then
+  // hide the annotation.
+  foreach ($nodes as $node) {
+    if ($user->uid != $node->uid) {
+      unset($node->annotation);
+    }
+  }
 }
 
 function product_manager_add_product_form($form, &$form_state) {
