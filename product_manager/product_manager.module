@@ -21,15 +21,15 @@ function product_manager_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
     );
-  $menu['admin/config/products/settings'] = array(
-    'title' => 'Config',
-    'description' => 'Change how annotations behave.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('product_manager_admin_settings'),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'product_manager.admin.inc',
-    );
+  //$menu['admin/config/products/settings'] = array(
+  //  'title' => 'Config',
+  //  'description' => 'Change how annotations behave.',
+  //  'page callback' => 'drupal_get_form',
+  //  'page arguments' => array('product_manager_admin_settings'),
+  //  'access arguments' => array('administer site configuration'),
+  //  'type' => MENU_NORMAL_ITEM,
+  //  'file' => 'product_manager.admin.inc',
+  //  );
   $menu['admin/config/products/add'] = array(
     'title' => 'Add new product',
     'page callback' => 'drupal_get_form',
@@ -37,26 +37,6 @@ function product_manager_menu() {
     'access arguments' => array('minishop add product'),
   );
   
-  $items['admin/config/annotate'] = array(
-    'title' => 'Node annotation',
-    'description' => 'Adjust node annotation options.',
-    'position' => 'right',
-    'weight' => -5,
-    'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => array('administer site configuration'),
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
-    );
-    $items['admin/config/annotate/settings'] = array(
-    'title' => 'Annotation settings',
-    'description' => 'Change how annotations behave.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('annotate_admin_settings'),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'annotate.admin.inc',
-    );
-
   return $menu;
 }
 
@@ -67,15 +47,13 @@ function product_manager_node_load($nodes, $types) {
   // hide the annotation.
   foreach ($nodes as $node) {
     if ($user->uid != $node->uid) {
-      unset($node->annotation);
+      unset($node->product);
     }
   }
 }
 
 function product_manager_add_product_form($form, &$form_state) {
-  
-  
-  
+
   $form_state['storage']['product_images'] =
     isset($form_state['storage']['product_images'])
     ? $form_state['storage']['product_images'] : 1;
@@ -173,6 +151,7 @@ function product_manager_add_product_form_submit($form, &$form_state) {
   $node->field_description[$node->language][]['value'] = $values['product_description'];
   $node->field_price[$node->language][]['value'] = $values['product_price'];
   
+    
   if (isset($values['product_images'])) {
     foreach($values['product_images'] as $image) {
       if (!$image['image'])
@@ -196,3 +175,4 @@ function product_manager_add_product_form_submit($form, &$form_state) {
   $node = node_submit($node); // Prepare node for saving
   node_save($node);
 }
+
