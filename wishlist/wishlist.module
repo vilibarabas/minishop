@@ -102,32 +102,51 @@ function wishlist_prepar_rows_top($items) {
   $start = ((count($items)-3) > 0) ?  count($items)-3: 0;
   
   for($i = $start; $i < count($items); $i++) {
+   
     $product = node_load($items[$i]->pid);
+    //dpm($product->field_images['und'][0]['uri']);
+    
     $html .= theme_render_template($path. '/templates/top_wishlist_item.tpl.php', array(
-                                                                          'name' => $product->title,
-                                                                          'price' => $product->field_price['und'][0]['value'],
-                                                                          'image' => theme('image_style',array('style_name' => 'thumbnail', 'path' => $product->field_images['und'][0]['uri']))
-                                                                          ));
+      'link' => '?q=node/'. $product->vid, 
+      'name' => $product->title,
+      'price' => $product->field_price['und'][0]['value'],
+      'image' => theme('image_style',array('style_name' => 'thumbnail', 'path' => $product->field_images['und'][0]['uri']))
+      )
+    );
   }
   $html .= l('List all whislist >> ', 'wishlist');
   $html = theme_render_template($path. '/templates/wishlist_top_container.tpl.php', array(
+                                      'title' => t('Wishlist'),
                                       'top' => $html,
                                       'count' => count($items),
                                        ));
   return $html;
 }
 
-function wishlist_node_view($node, $view_mode, $langcode) {
+function wishlist_field_extra_fields() {
+   
+  $field_name = 'my_extra_field';
+  $node_type = variable_get('wishlist_settings')['bundle'];
   
-  $bundle = variable_get('wishlist_settings');
-                         
-  switch ($node->type) {
-    case $bundle['bundle']:
-      $node->content['product_manager_add_to_wishlist'] = array(
-        '#markup' => l('Add to wishlist', 'wishlist/add/'. $node->vid , array('attributes' => array('class' => array('btn btn-success'))))
-      );
-      break;
-  }
+  $extra['node'][$node_type]['display'][$field_name] = array(
+    'label' => t('Field title'),
+    'description' => t('Field description.'),
+    // default weight value
+    'weight' => 50, 
+  );
+  return $extra;
 }
 
+function wishlist_node_view($node, $view_mode, $langcode) {
+  
+    $extra_fields = field_info_extra_fields('node', $node->type, 'display');
+    $field_name = 'my_extra_field';
+    if (!empty($extra_fields[$field_name]['display'][$view_mode]['visible'])) {
+      // Your extra field logic goes here. It can be any renderable array.
+      $node->content[$field_name] = array(
+        '#type' => 'item',
+        '#markup' => l(t('Add to wishlist'), 'wishlist/add/'. $node->vid , array('attributes' => array('class' => array('btn btn-success')))),
+      );
+    }
+}
 

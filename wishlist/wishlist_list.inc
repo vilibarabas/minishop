@@ -29,7 +29,7 @@ function wishlist_list() {
     $output .= theme('pager', array('quantity',count($rows)));
   }
   else {
-    $output = "<h2>No Item in wishlist!!!</h2>";
+    $output = "<h2>There is no unity in the wishlist!!!</h2>";
   }
   return $output; 
 }

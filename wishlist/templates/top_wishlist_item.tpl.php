@@ -1,4 +1,4 @@
-<a>
+<a href="<?php  echo $link;?>"> 
     <div class="row">
         <div class="col-md-4">
             <span>
